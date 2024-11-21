@@ -6,7 +6,7 @@ import __dirname from './utils.js';
 import { Server } from 'socket.io'
 
 const app = express();
-const PORT = 9090
+const PORT = process.env.PORT || 9090
 
 
 // Middlewares de configuracion
@@ -19,9 +19,6 @@ app.engine("handlebars", handlebars.engine())
 app.set('views', __dirname + '/views')
 app.set('view engine', 'handlebars')
 
-
-// console.log(__dirname);
-
 // Le indicamos al server que el direectorio public es publico
 app.use(express.static(__dirname + '/public'));
 
@@ -31,8 +28,6 @@ app.use(express.static(__dirname + '/public'));
 app.get('/ping', (req, res) => {
     res.render('index', {});
 })
-
-
 
 // Routes
 app.use('/', viewRoutes)
@@ -46,38 +41,30 @@ const httpServer = app.listen(PORT, () => {
 //  instaciamos socket.io
 const socketServer = new Server(httpServer)
 
-
-
 // Creamos un canal de comunicación hacia el Cliente
-
-const logs = []
-socketServer.on('connection', sockect => {
+const messages = []
+socketServer.on('connection', socket => {
     // TODO LO QUE SEA SOCKECT, VA AQUI!!!
 
 
-    // sockect.on("mensaje", data => {
-    //     console.log("Recibido: ", data);
-    // })
 
-    // sockect.emit("msg_02", "Hola soy el server");
-
-
-    sockect.broadcast.emit("broadcast", "Este evento es para todos los sockets, menos el socket desde que se emitió el mensaje!")
-
-
-    socketServer.emit("evento_para_todos", "Evento para todos los Sockets!")
 
 
 
     // 2da Parte
-    sockect.on("mensaje", data => {
+    socket.on("message", data => {
         console.log("Recibido: ", data);
-        logs.push({ socketId: sockect.id, message: data })
+        messages.push(data)
 
-        // enviamos al cliente los logs
-        socketServer.emit('logs', { logs })
+        // enviamos un array de objetos ---> [{ user: "Juan", message: "Hola" }, { user: "Elias", message: "Como estas?" }]
+        socketServer.emit('messageLogs', messages)
     })
 
+
+    // hacemos un broadcast del nuevo usuario que se conecta al chat
+    socket.on('userConnected', data => {
+        socket.broadcast.emit("userConnected", data.user)
+    })
 
 
 
